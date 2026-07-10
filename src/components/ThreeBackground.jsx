@@ -377,7 +377,7 @@ export default function ThreeBackground() {
       const v = new THREE.Vector3();
       for (let i = 0; i < pos.count; i++) {
         v.fromBufferAttribute(pos, i);
-        const yNorm = (v.y + 1.12) / 2.24;
+        const yNorm = Math.max(0, Math.min(1, (v.y + 1.12) / 2.24));
         const taper = 1.0 - Math.pow(yNorm, 2.5) * 0.45;
         v.x *= taper;
         v.z *= taper;
