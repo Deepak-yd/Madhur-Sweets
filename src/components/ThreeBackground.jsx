@@ -1,34 +1,64 @@
-import React, { useEffect, useRef } from 'react';
+'use client';
+import { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
+import gsap from 'gsap';
+
+function isWebGLAvailable() {
+  try {
+    const canvas = document.createElement('canvas');
+    return !!(
+      window.WebGLRenderingContext &&
+      (canvas.getContext('webgl') || canvas.getContext('experimental-webgl'))
+    );
+  } catch {
+    return false;
+  }
+}
 
 export default function ThreeBackground() {
   const canvasRef = useRef(null);
+  const [webglSupported, setWebglSupported] = useState(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const scene = new THREE.Scene();
-    const camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 120);
-    camera.position.z = 22;
+    if (!isWebGLAvailable()) {
+      setWebglSupported(false);
+      return;
+    }
 
-    const renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    let scene, camera, renderer;
+    try {
+      scene = new THREE.Scene();
+      camera = new THREE.PerspectiveCamera(55, window.innerWidth / window.innerHeight, 0.1, 120);
+      camera.position.z = 22;
+
+      renderer = new THREE.WebGLRenderer({ canvas, alpha: true, antialias: true });
+    } catch (e) {
+      setWebglSupported(false);
+      return;
+    }
+
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
     // Lights
-    scene.add(new THREE.AmbientLight(0xffffff, 0.35));
-    const pl1 = new THREE.PointLight(0xd4af37, 3, 60); pl1.position.set(12, 10, 8); scene.add(pl1);
-    const pl2 = new THREE.PointLight(0xf9e8a2, 1.8, 50); pl2.position.set(-12, -8, 6); scene.add(pl2);
-    const pl3 = new THREE.PointLight(0xaa771c, 1.2, 40); pl3.position.set(0, -15, 4); scene.add(pl3);
+    scene.add(new THREE.AmbientLight(0xffffff, 1.2));
+    const dl = new THREE.DirectionalLight(0xffffff, 2.5);
+    dl.position.set(0, 0, 10);
+    scene.add(dl);
 
-    // Gold material with environment-like sheen
-    const goldMat = new THREE.MeshStandardMaterial({
-      color: 0xd4af37, metalness: 0.92, roughness: 0.12, flatShading: false
-    });
-    const darkGoldMat = new THREE.MeshStandardMaterial({
-      color: 0xaa771c, metalness: 0.88, roughness: 0.18
-    });
+    const pl1 = new THREE.PointLight(0xd4af37, 8, 60);   pl1.position.set(12,  10,  8); scene.add(pl1);
+    const pl2 = new THREE.PointLight(0xf9e8a2, 5, 50);  pl2.position.set(-12, -8,  6); scene.add(pl2);
+    const pl3 = new THREE.PointLight(0xaa771c, 4, 40);  pl3.position.set(0,  -15,  4); scene.add(pl3);
+
+    const kajuMat = new THREE.MeshStandardMaterial({ color: 0xfffae6, roughness: 0.8, metalness: 0.05 });
+    const kismisMat = new THREE.MeshStandardMaterial({ color: 0x2b1509, roughness: 0.95, metalness: 0.02 });
+    const pistaShellMat = new THREE.MeshStandardMaterial({ color: 0xdfcdab, roughness: 0.8, metalness: 0.05 });
+    const pistaKernelMat = new THREE.MeshStandardMaterial({ color: 0x8fa85b, roughness: 0.6, metalness: 0.05 });
+    const elaichiMat = new THREE.MeshStandardMaterial({ color: 0x98b478, roughness: 0.7, metalness: 0.1 });
+    const kesarMat = new THREE.MeshStandardMaterial({ color: 0xff2200, roughness: 0.5, metalness: 0.1, emissive: 0x881100, emissiveIntensity: 0.4 });
 
     const objects = [];
     const place = (mesh) => {
@@ -38,36 +68,179 @@ export default function ThreeBackground() {
         Math.random() * -15 - 3
       );
       mesh.userData = {
-        rx: (Math.random() - 0.5) * 0.012,
-        ry: (Math.random() - 0.5) * 0.012,
-        floatAmp: Math.random() * 1.6 + 0.5,
-        floatSpd: Math.random() * 0.6 + 0.3,
+        rx:       (Math.random() - 0.5) * 0.006, // Slower rotation
+        ry:       (Math.random() - 0.5) * 0.006,
+        floatAmp: Math.random() * 2.0 + 0.8,     // More gentle, larger floating
+        floatSpd: Math.random() * 0.3 + 0.15,    // Slower float speed
         floatOff: Math.random() * Math.PI * 2,
-        baseY: mesh.position.y
+        baseY:    mesh.position.y,
       };
+      
+      const s = Math.random() * 0.7 + 0.6; // Size variety
+      mesh.scale.set(s, s, s);
+      
       scene.add(mesh);
       objects.push(mesh);
+
+      // GSAP entrance: scale up from zero to natural size
+      gsap.from(mesh.scale, {
+        x: 0, y: 0, z: 0,
+        duration: 2.0,
+        ease: 'elastic.out(1, 0.5)',
+        delay: Math.random() * 2 + 0.5,
+      });
     };
 
-    // Spheres — Ladoos
-    const sphereGeo = new THREE.SphereGeometry(0.9, 16, 16);
-    for (let i = 0; i < 6; i++) place(new THREE.Mesh(sphereGeo, goldMat));
+    // Kaju (Cashew) Geometry builder
+    const createKajuGeometry = () => {
+      const points = [];
+      for (let i = 0; i <= 10; i++) {
+        const t = i / 10;
+        const angle = -Math.PI * 0.45 + t * Math.PI * 0.95;
+        const r = 1.0 + Math.sin(angle * 1.4) * 0.22;
+        const x = Math.cos(angle) * r * 1.15;
+        const y = Math.sin(angle) * r * 0.75 + (t - 0.5) * (t - 0.5) * 0.6;
+        points.push(new THREE.Vector3(x, y, 0));
+      }
+      const curve = new THREE.CatmullRomCurve3(points);
+      const geo = new THREE.TubeGeometry(curve, 20, 0.55, 10, false); // Wider base
+      
+      // Flatten cashew slightly in Z but keep it somewhat thick
+      const pos = geo.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        v.z *= 0.85; // Less flattened, rounder
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    };
 
-    // Cylinders — Barfi coins
-    const cylGeo = new THREE.CylinderGeometry(1.1, 1.1, 0.28, 10);
-    for (let i = 0; i < 5; i++) place(new THREE.Mesh(cylGeo, darkGoldMat));
+    // Kismis (Raisin) Geometry builder
+    const createKismisGeometry = () => {
+      const geo = new THREE.SphereGeometry(0.75, 20, 20);
+      geo.scale(0.9, 1.5, 0.9); // Make them slightly longer
+      
+      const pos = geo.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        // Add more intense raisin-like wrinkles/grooves
+        const wave = Math.sin(v.y * 14) * Math.cos(v.x * 14) * Math.sin(v.z * 14) * 0.18;
+        const wave2 = Math.sin(v.y * 8) * 0.1;
+        const norm = v.clone().normalize();
+        v.addScaledVector(norm, wave + wave2);
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    };
 
-    // Icosahedrons — decorative gems
-    const icoGeo = new THREE.IcosahedronGeometry(0.7, 0);
-    for (let i = 0; i < 4; i++) place(new THREE.Mesh(icoGeo, goldMat));
+    // Pista (Pistachio) Group builder
+    const createPistachioGroup = (shellMat, kernelMat) => {
+      const group = new THREE.Group();
+      
+      // Left shell half
+      const leftShellGeo = new THREE.SphereGeometry(0.85, 12, 12, 0, Math.PI * 0.9, 0, Math.PI);
+      leftShellGeo.scale(0.8, 1.25, 0.45);
+      const leftShell = new THREE.Mesh(leftShellGeo, shellMat);
+      leftShell.position.x = -0.12;
+      leftShell.rotation.y = -0.1;
+      group.add(leftShell);
+      
+      // Right shell half
+      const rightShellGeo = new THREE.SphereGeometry(0.85, 12, 12, 0, Math.PI * 0.9, 0, Math.PI);
+      rightShellGeo.scale(0.8, 1.25, 0.45);
+      const rightShell = new THREE.Mesh(rightShellGeo, shellMat);
+      rightShell.position.x = 0.12;
+      rightShell.rotation.y = Math.PI + 0.1;
+      group.add(rightShell);
+      
+      // Green kernel
+      const kernelGeo = new THREE.SphereGeometry(0.65, 12, 12);
+      kernelGeo.scale(0.7, 1.0, 0.6);
+      const kernel = new THREE.Mesh(kernelGeo, kernelMat);
+      group.add(kernel);
+      
+      return group;
+    };
 
-    // Torus — bangles / garlands
-    const torGeo = new THREE.TorusGeometry(0.7, 0.18, 10, 28);
-    for (let i = 0; i < 3; i++) place(new THREE.Mesh(torGeo, darkGoldMat));
+    // Elaichi (Cardamom) Geometry builder
+    const createElaichiGeometry = () => {
+      const geo = new THREE.SphereGeometry(0.5, 16, 16);
+      geo.scale(0.6, 1.4, 0.6); // elongated pod
+      
+      const pos = geo.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        // Add vertical ridges
+        const angle = Math.atan2(v.x, v.z); 
+        const wave = Math.sin(angle * 12) * 0.08; 
+        
+        // Taper the ends to make it pointy
+        const taper = 1.0 - Math.pow(Math.abs(v.y / 1.4), 2.5) * 0.4;
+        v.x *= taper;
+        v.z *= taper;
+        
+        const norm = v.clone().normalize();
+        v.addScaledVector(new THREE.Vector3(norm.x, 0, norm.z), wave);
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    };
+
+    // Kesar (Saffron) Geometry builder
+    const createKesarGeometry = () => {
+      const points = [];
+      for (let i = 0; i <= 10; i++) {
+        const t = i / 10;
+        const x = Math.sin(t * Math.PI) * 0.3;
+        const y = t * 2.0 - 1.0;
+        const z = Math.cos(t * Math.PI) * 0.15;
+        points.push(new THREE.Vector3(x, y, z));
+      }
+      const curve = new THREE.CatmullRomCurve3(points);
+      const geo = new THREE.TubeGeometry(curve, 10, 0.04, 5, false);
+      
+      const pos = geo.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        const yNorm = (v.y + 1.0) / 2.0;
+        if (yNorm > 0.6) {
+          const thickness = 1.0 + (yNorm - 0.6) * 1.5;
+          v.x *= thickness;
+          v.z *= thickness;
+        }
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    };
+
+    // Populate the scene with realistic dry fruits and spices
+    for (let i = 0; i < 5; i++) {
+      place(new THREE.Mesh(createKajuGeometry(), kajuMat));
+    }
+    for (let i = 0; i < 5; i++) {
+      place(new THREE.Mesh(createKismisGeometry(), kismisMat));
+    }
+    for (let i = 0; i < 5; i++) {
+      place(createPistachioGroup(pistaShellMat, pistaKernelMat));
+    }
+    for (let i = 0; i < 6; i++) {
+      place(new THREE.Mesh(createElaichiGeometry(), elaichiMat));
+    }
+    for (let i = 0; i < 12; i++) {
+      place(new THREE.Mesh(createKesarGeometry(), kesarMat));
+    }
 
     // Particles
-    const pCount = 180;
-    const pPos = new Float32Array(pCount * 3);
+    const pCount = 220;
+    const pPos   = new Float32Array(pCount * 3);
     for (let i = 0; i < pCount * 3; i += 3) {
       pPos[i]   = (Math.random() - 0.5) * 60;
       pPos[i+1] = (Math.random() - 0.5) * 60;
@@ -76,79 +249,72 @@ export default function ThreeBackground() {
     const pGeo = new THREE.BufferGeometry();
     pGeo.setAttribute('position', new THREE.BufferAttribute(pPos, 3));
 
-    // Glowing particle texture
     const pCanvas = document.createElement('canvas');
     pCanvas.width = pCanvas.height = 32;
     const pCtx = pCanvas.getContext('2d');
-    const grd = pCtx.createRadialGradient(16,16,0,16,16,16);
-    grd.addColorStop(0, 'rgba(255,232,150,1)');
+    const grd  = pCtx.createRadialGradient(16,16,0,16,16,16);
+    grd.addColorStop(0,    'rgba(255,232,150,1)');
     grd.addColorStop(0.45, 'rgba(212,175,55,0.55)');
-    grd.addColorStop(1, 'rgba(0,0,0,0)');
-    pCtx.fillStyle = grd; pCtx.fillRect(0,0,32,32);
+    grd.addColorStop(1,    'rgba(0,0,0,0)');
+    pCtx.fillStyle = grd; pCtx.fillRect(0, 0, 32, 32);
 
     const pMat = new THREE.PointsMaterial({
       size: 0.28, map: new THREE.CanvasTexture(pCanvas),
       transparent: true, blending: THREE.AdditiveBlending,
-      depthWrite: false, color: 0xd4af37
+      depthWrite: false, color: 0xd4af37,
     });
     const particles = new THREE.Points(pGeo, pMat);
     scene.add(particles);
 
-    // Input tracking
     let mx = 0, my = 0, scrollPct = 0;
-    const onMouse = e => { mx = (e.clientX/window.innerWidth)-0.5; my = (e.clientY/window.innerHeight)-0.5; };
-    const onScroll = () => {
-      const max = document.documentElement.scrollHeight - window.innerHeight;
-      scrollPct = max > 0 ? window.scrollY / max : 0;
-    };
-    const onResize = () => {
-      camera.aspect = window.innerWidth / window.innerHeight;
-      camera.updateProjectionMatrix();
-      renderer.setSize(window.innerWidth, window.innerHeight);
-    };
+    const onMouse  = e => { mx = (e.clientX / window.innerWidth) - 0.5; my = (e.clientY / window.innerHeight) - 0.5; };
+    const onScroll = () => { const max = document.documentElement.scrollHeight - window.innerHeight; scrollPct = max > 0 ? window.scrollY / max : 0; };
+    const onResize = () => { camera.aspect = window.innerWidth / window.innerHeight; camera.updateProjectionMatrix(); renderer.setSize(window.innerWidth, window.innerHeight); };
+
     window.addEventListener('mousemove', onMouse);
-    window.addEventListener('scroll', onScroll);
-    window.addEventListener('resize', onResize);
+    window.addEventListener('scroll',    onScroll);
+    window.addEventListener('resize',    onResize);
 
     const clock = new THREE.Clock();
     let raf;
     const tick = () => {
       raf = requestAnimationFrame(tick);
       const t = clock.getElapsedTime();
-
-      // Smooth camera
       camera.position.x += (mx * 8 - camera.position.x) * 0.04;
       camera.position.y += (-my * 8 - camera.position.y) * 0.04;
       camera.lookAt(0, 0, 0);
-
-      // Particles drift
       particles.rotation.y = t * 0.018;
       particles.position.y = scrollPct * 12;
-
-      // Floating objects
       objects.forEach((obj, i) => {
         obj.rotation.x += obj.userData.rx;
         obj.rotation.y += obj.userData.ry;
         obj.position.y = obj.userData.baseY + Math.sin(t * obj.userData.floatSpd + obj.userData.floatOff) * obj.userData.floatAmp;
         obj.rotation.z = scrollPct * 4 + i * 0.28;
       });
-
-      // Pulse lights
-      pl1.intensity = 2.5 + Math.sin(t * 0.9) * 0.8;
-      pl2.intensity = 1.5 + Math.sin(t * 1.2 + 1) * 0.5;
-
+      pl1.intensity = 8.0 + Math.sin(t * 0.9) * 2.0;
+      pl2.intensity = 5.0 + Math.sin(t * 1.2 + 1) * 1.5;
       renderer.render(scene, camera);
     };
     tick();
 
     return () => {
       window.removeEventListener('mousemove', onMouse);
-      window.removeEventListener('scroll', onScroll);
-      window.removeEventListener('resize', onResize);
+      window.removeEventListener('scroll',    onScroll);
+      window.removeEventListener('resize',    onResize);
       cancelAnimationFrame(raf);
       renderer.dispose();
+      kajuMat.dispose();
+      kismisMat.dispose();
+      pistaShellMat.dispose();
+      pistaKernelMat.dispose();
+      elaichiMat.dispose();
+      kesarMat.dispose();
+      pMat.dispose();
+      pGeo.dispose();
     };
   }, []);
+
+  if (!webglSupported) return null;
 
   return <canvas id="webgl-bg" ref={canvasRef} />;
 }
