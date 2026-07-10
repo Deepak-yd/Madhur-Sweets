@@ -53,12 +53,159 @@ export default function ThreeBackground() {
     const pl2 = new THREE.PointLight(0xf9e8a2, 5, 50);  pl2.position.set(-12, -8,  6); scene.add(pl2);
     const pl3 = new THREE.PointLight(0xaa771c, 4, 40);  pl3.position.set(0,  -15,  4); scene.add(pl3);
 
-    const kajuMat = new THREE.MeshStandardMaterial({ color: 0xfffae6, roughness: 0.8, metalness: 0.05 });
-    const kismisMat = new THREE.MeshStandardMaterial({ color: 0x2b1509, roughness: 0.95, metalness: 0.02 });
-    const pistaShellMat = new THREE.MeshStandardMaterial({ color: 0xdfcdab, roughness: 0.8, metalness: 0.05 });
-    const pistaKernelMat = new THREE.MeshStandardMaterial({ color: 0x8fa85b, roughness: 0.6, metalness: 0.05 });
-    const elaichiMat = new THREE.MeshStandardMaterial({ color: 0x98b478, roughness: 0.7, metalness: 0.1 });
-    const kesarMat = new THREE.MeshStandardMaterial({ color: 0xff2200, roughness: 0.5, metalness: 0.1, emissive: 0x881100, emissiveIntensity: 0.4 });
+    const createProceduralTexture = (type) => {
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return null;
+
+      if (type === 'kaju') {
+        const grd = ctx.createRadialGradient(256, 256, 50, 256, 256, 256);
+        grd.addColorStop(0, '#ffffff');
+        grd.addColorStop(0.6, '#fffaf0');
+        grd.addColorStop(1, '#f6ebd4');
+        ctx.fillStyle = grd;
+        ctx.fillRect(0, 0, 512, 512);
+
+        ctx.fillStyle = 'rgba(196, 154, 108, 0.15)';
+        for (let i = 0; i < 15; i++) {
+          ctx.beginPath();
+          ctx.arc(Math.random() * 512, Math.random() * 512, Math.random() * 60 + 20, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (type === 'kismis') {
+        ctx.fillStyle = '#261208';
+        ctx.fillRect(0, 0, 512, 512);
+
+        ctx.strokeStyle = '#140803';
+        for (let i = 0; i < 80; i++) {
+          ctx.lineWidth = Math.random() * 4 + 1;
+          ctx.beginPath();
+          const y = Math.random() * 512;
+          ctx.moveTo(0, y);
+          ctx.bezierCurveTo(170, y + (Math.random() - 0.5) * 60, 340, y + (Math.random() - 0.5) * 60, 512, y);
+          ctx.stroke();
+        }
+      } else if (type === 'pista_shell') {
+        ctx.fillStyle = '#e6d0a7';
+        ctx.fillRect(0, 0, 512, 512);
+
+        ctx.strokeStyle = 'rgba(163, 125, 87, 0.4)';
+        for (let i = 0; i < 50; i++) {
+          ctx.lineWidth = Math.random() * 2 + 1;
+          ctx.beginPath();
+          const x = Math.random() * 512;
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x + (Math.random() - 0.5) * 30, 512);
+          ctx.stroke();
+        }
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.2)';
+        for (let i = 0; i < 20; i++) {
+          ctx.beginPath();
+          ctx.arc(Math.random() * 512, Math.random() * 512, Math.random() * 40 + 10, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (type === 'pista_kernel') {
+        ctx.fillStyle = '#7a9642';
+        ctx.fillRect(0, 0, 512, 512);
+
+        ctx.fillStyle = 'rgba(92, 38, 65, 0.65)';
+        for (let i = 0; i < 18; i++) {
+          ctx.beginPath();
+          ctx.arc(Math.random() * 512, Math.random() * 512, Math.random() * 90 + 30, 0, Math.PI * 2);
+          ctx.fill();
+        }
+        ctx.fillStyle = 'rgba(186, 209, 102, 0.35)';
+        for (let i = 0; i < 15; i++) {
+          ctx.beginPath();
+          ctx.arc(Math.random() * 512, Math.random() * 512, Math.random() * 60 + 20, 0, Math.PI * 2);
+          ctx.fill();
+        }
+      } else if (type === 'elaichi') {
+        ctx.fillStyle = '#8fad75';
+        ctx.fillRect(0, 0, 512, 512);
+
+        for (let i = 0; i < 90; i++) {
+          ctx.strokeStyle = i % 2 === 0 ? '#6d8a54' : '#adc795';
+          ctx.lineWidth = Math.random() * 3 + 1;
+          ctx.beginPath();
+          const x = Math.random() * 512;
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x + (Math.random() - 0.5) * 20, 512);
+          ctx.stroke();
+        }
+      } else if (type === 'badam') {
+        ctx.fillStyle = '#783c18';
+        ctx.fillRect(0, 0, 512, 512);
+
+        for (let i = 0; i < 120; i++) {
+          ctx.strokeStyle = i % 3 === 0 ? '#4a2008' : (i % 3 === 1 ? '#94532c' : '#5c2d12');
+          ctx.lineWidth = Math.random() * 2 + 0.8;
+          ctx.beginPath();
+          const x = Math.random() * 512;
+          ctx.moveTo(x, 0);
+          ctx.lineTo(x + (Math.random() - 0.5) * 15, 512);
+          ctx.stroke();
+        }
+      }
+
+      const tex = new THREE.CanvasTexture(canvas);
+      tex.wrapS = THREE.RepeatWrapping;
+      tex.wrapT = THREE.RepeatWrapping;
+      return tex;
+    };
+
+    const kajuTex = createProceduralTexture('kaju');
+    const kismisTex = createProceduralTexture('kismis');
+    const pistaShellTex = createProceduralTexture('pista_shell');
+    const pistaKernelTex = createProceduralTexture('pista_kernel');
+    const elaichiTex = createProceduralTexture('elaichi');
+    const badamTex = createProceduralTexture('badam');
+
+    const kajuMat = new THREE.MeshStandardMaterial({
+      map: kajuTex,
+      bumpMap: kajuTex,
+      bumpScale: 0.02,
+      roughness: 0.75,
+      metalness: 0.02,
+    });
+    const kismisMat = new THREE.MeshStandardMaterial({
+      map: kismisTex,
+      bumpMap: kismisTex,
+      bumpScale: 0.08,
+      roughness: 0.95,
+      metalness: 0.01,
+    });
+    const pistaShellMat = new THREE.MeshStandardMaterial({
+      map: pistaShellTex,
+      bumpMap: pistaShellTex,
+      bumpScale: 0.04,
+      roughness: 0.85,
+      metalness: 0.02,
+    });
+    const pistaKernelMat = new THREE.MeshStandardMaterial({
+      map: pistaKernelTex,
+      bumpMap: pistaKernelTex,
+      bumpScale: 0.025,
+      roughness: 0.65,
+      metalness: 0.02,
+    });
+    const elaichiMat = new THREE.MeshStandardMaterial({
+      map: elaichiTex,
+      bumpMap: elaichiTex,
+      bumpScale: 0.05,
+      roughness: 0.8,
+      metalness: 0.02,
+    });
+    const badamMat = new THREE.MeshStandardMaterial({
+      map: badamTex,
+      bumpMap: badamTex,
+      bumpScale: 0.045,
+      roughness: 0.82,
+      metalness: 0.01,
+    });
+    const kesarMat = new THREE.MeshStandardMaterial({ color: 0xff1a00, roughness: 0.45, metalness: 0.05, emissive: 0x991100, emissiveIntensity: 0.45 });
 
     const objects = [];
     const place = (mesh) => {
@@ -221,6 +368,28 @@ export default function ThreeBackground() {
       return geo;
     };
 
+    // Badam (Almond) Geometry builder
+    const createAlmondGeometry = () => {
+      const geo = new THREE.SphereGeometry(0.8, 20, 20);
+      geo.scale(0.8, 1.4, 0.5);
+      
+      const pos = geo.attributes.position;
+      const v = new THREE.Vector3();
+      for (let i = 0; i < pos.count; i++) {
+        v.fromBufferAttribute(pos, i);
+        const yNorm = (v.y + 1.12) / 2.24;
+        const taper = 1.0 - Math.pow(yNorm, 2.5) * 0.45;
+        v.x *= taper;
+        v.z *= taper;
+        const wave = Math.sin(v.y * 12) * Math.cos(v.x * 12) * 0.04;
+        const norm = v.clone().normalize();
+        v.addScaledVector(norm, wave);
+        pos.setXYZ(i, v.x, v.y, v.z);
+      }
+      geo.computeVertexNormals();
+      return geo;
+    };
+
     // Populate the scene with realistic dry fruits and spices
     for (let i = 0; i < 5; i++) {
       place(new THREE.Mesh(createKajuGeometry(), kajuMat));
@@ -233,6 +402,9 @@ export default function ThreeBackground() {
     }
     for (let i = 0; i < 6; i++) {
       place(new THREE.Mesh(createElaichiGeometry(), elaichiMat));
+    }
+    for (let i = 0; i < 5; i++) {
+      place(new THREE.Mesh(createAlmondGeometry(), badamMat));
     }
     for (let i = 0; i < 12; i++) {
       place(new THREE.Mesh(createKesarGeometry(), kesarMat));
@@ -308,9 +480,16 @@ export default function ThreeBackground() {
       pistaShellMat.dispose();
       pistaKernelMat.dispose();
       elaichiMat.dispose();
+      badamMat.dispose();
       kesarMat.dispose();
       pMat.dispose();
       pGeo.dispose();
+      kajuTex.dispose();
+      kismisTex.dispose();
+      pistaShellTex.dispose();
+      pistaKernelTex.dispose();
+      elaichiTex.dispose();
+      badamTex.dispose();
     };
   }, []);
 

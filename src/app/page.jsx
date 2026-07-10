@@ -9,8 +9,11 @@ import Loader          from '@/components/Loader';
 import MagneticButton  from '@/components/MagneticButton';
 import Logo            from '@/components/Logo';
 
+import Lenis from 'lenis';
+
 const ThreeBackground = dynamic(() => import('@/components/ThreeBackground'), { ssr: false });
 const MenuCard        = dynamic(() => import('@/components/MenuCard'),        { ssr: false });
+const CursorParticles = dynamic(() => import('@/components/CursorParticles'), { ssr: false });
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -116,19 +119,37 @@ export default function Home() {
   const [scrolled,  setScrolled]  = useState(false);
   const [menuOpen,  setMenuOpen]  = useState(false);
 
-  const cursorRef  = useRef(null);
   const counterRef = useRef(null);
   const heroRef    = useRef(null);
 
-  /* ── Cursor follower */
+  /* ── Lenis Smooth Scroll */
   useEffect(() => {
-    const el = cursorRef.current;
-    if (!el) return;
-    const move = (e) => {
-      gsap.to(el, { x: e.clientX, y: e.clientY, duration: 0.5, ease: 'power2.out' });
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+      wheelMultiplier: 1.0,
+    });
+
+    const raf = (time) => {
+      lenis.raf(time);
+      requestAnimationFrame(raf);
     };
-    window.addEventListener('mousemove', move);
-    return () => window.removeEventListener('mousemove', move);
+    requestAnimationFrame(raf);
+
+    lenis.on('scroll', ScrollTrigger.update);
+
+    // Sync Lenis scroll with GSAP ticker
+    const gsapTickerUpdate = (time) => {
+      lenis.raf(time * 1000);
+    };
+    gsap.ticker.add(gsapTickerUpdate);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      lenis.destroy();
+      gsap.ticker.remove(gsapTickerUpdate);
+    };
   }, []);
 
   /* ── Header shrink */
@@ -284,8 +305,8 @@ export default function Home() {
     <>
       {!loaded && <Loader onComplete={handleLoaderDone} />}
 
-      {/* Cursor glow */}
-      <div className="cursor-glow" ref={cursorRef} />
+      {/* Interactive Canvas particles cursor trail */}
+      <CursorParticles />
 
       <ThreeBackground />
 
