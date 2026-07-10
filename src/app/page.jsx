@@ -114,6 +114,7 @@ export default function Home() {
   const [loaded,    setLoaded]    = useState(false);
   const [activeCat, setActiveCat] = useState('all');
   const [scrolled,  setScrolled]  = useState(false);
+  const [menuOpen,  setMenuOpen]  = useState(false);
 
   const cursorRef  = useRef(null);
   const counterRef = useRef(null);
@@ -289,18 +290,24 @@ export default function Home() {
       <ThreeBackground />
 
       {/* ── HEADER ──────────────────────────────────── */}
-      <header className={`site-header ${scrolled ? 'shrunk' : ''}`}>
-        <div className="brand" onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}>
+      <header className={`site-header ${scrolled ? 'shrunk' : ''} ${menuOpen ? 'mobile-open' : ''}`}>
+        <div className="brand" onClick={() => { window.scrollTo({ top: 0, behavior: 'smooth' }); setMenuOpen(false); }}>
           <Logo layout="horizontal" />
         </div>
 
+        <button className={`nav-toggle ${menuOpen ? 'active' : ''}`} aria-label="Toggle Menu" onClick={() => setMenuOpen(!menuOpen)}>
+          <span />
+          <span />
+          <span />
+        </button>
+
         <nav className="header-nav">
-          <a href="#menu"    className="nav-a">Menu</a>
-          <a href="#about"   className="nav-a">About</a>
-          <a href="#contact" className="nav-a">Contact</a>
+          <a href="#menu"    className="nav-a" onClick={() => setMenuOpen(false)}>Menu</a>
+          <a href="#about"   className="nav-a" onClick={() => setMenuOpen(false)}>About</a>
+          <a href="#contact" className="nav-a" onClick={() => setMenuOpen(false)}>Contact</a>
         </nav>
 
-        <MagneticButton as="a" href="tel:+919835568135" className="header-call" strength={0.28}>
+        <MagneticButton as="a" href="tel:+919835568135" className="header-call" strength={0.28} onClick={() => setMenuOpen(false)}>
           <i className="fa-solid fa-phone" /> +91 98355 68135
         </MagneticButton>
       </header>
