@@ -1,4 +1,5 @@
 import { Playfair_Display, Montserrat, Cinzel_Decorative, Great_Vibes } from 'next/font/google';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 import './globals.css';
 
 const playfair = Playfair_Display({
@@ -48,7 +49,10 @@ export default function RootLayout({ children }) {
           referrerPolicy="no-referrer"
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <SpeedInsights />
+      </body>
     </html>
   );
 }
